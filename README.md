@@ -1,4 +1,4 @@
-# Tax Monitoring backend
+# SAM backend and Hasura Example
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It also includes a hasura graphql engineA
 
