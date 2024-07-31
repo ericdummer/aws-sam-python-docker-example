@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+## KEEP THIS AT 3.11 - PANDAS IS NOT COMPATIBLE WITH 3.12
+RUN apt-get update && apt-get install -y build-essential
+RUN apt-get install -y vim
+
+WORKDIR /app
+
+# COPY requirements.txt ./
+COPY requirements-test.txt ./
+
+RUN pip install -r requirements-test.txt
+
+# Copy your project files
+COPY src .
+COPY tests tests
+
+ENV PYTHONPATH=.: 

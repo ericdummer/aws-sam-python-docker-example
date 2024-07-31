@@ -1,0 +1,68 @@
+{
+    "request": {
+      "ip": "13.33.86.47",
+      "language": "en",
+      "method": "post",
+      "geoip": {
+        "cityname": "bellevue",
+        "continentcode": "na",
+        "countrycode3": "usa",
+        "countrycode": "us",
+        "countryname": "united states of america",
+        "latitude": 47.61793,
+        "longitude": -122.19584,
+        "subdivisioncode": "wa",
+        "subdivisionname": "washington",
+        "timezone": "america/los_angeles"
+      },
+      "hostname": "sub.example.com",
+      "user_agent": "curl/7.64.1"
+    },
+    "connection": {
+      "id": "con_fpe5kj482ko1eozq",
+      "name": "username-password-authentication",
+      "metadata": {},
+      "strategy": "auth0"
+    },
+    "tenant": {
+      "id": "tenant_id"
+    },
+    "transaction": {
+      "acr_values": [],
+      "id": "",
+      "locale": "",
+      "requested_scopes": [],
+      "ui_locales": [],
+      "protocol": "oauth2-access-token",
+      "redirect_uri": "http://someuri.com",
+      "prompt": [
+        "none"
+      ],
+      "login_hint": "test@test.com",
+      "response_mode": "form_post",
+      "response_type": [
+        "id_token"
+      ],
+      "state": "aabbccddeeffggttasrs"
+    },
+    "user": {
+      "tenant": "tenant_id",
+      "username": "j+smith",
+      "email": "j+smith@example.com",
+      "phonenumber": "123-123-1234",
+      "user_id": "auth0|5f7c8ec7c33c6c004bbafe82",
+      "created_at": "2024-04-04t15:09:19.487z",
+      "email_verified": true,
+      "family_name": "smith",
+      "given_name": "john",
+      "last_password_reset": "2024-04-04t15:09:19.487z",
+      "name": "john smith",
+      "nickname": "j+smith",
+      "phone_number": "123-123-1234",
+      "phone_verified": true,
+      "picture": "http://www.gravatar.com/avatar/?d=identicon",
+      "updated_at": "2024-04-04t15:09:19.487z",
+      "app_metadata": {},
+      "user_metadata": {}
+    }
+  }

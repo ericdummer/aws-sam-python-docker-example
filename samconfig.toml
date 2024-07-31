@@ -1,0 +1,70 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "tm-dev"
+parameter_overrides=[
+    "SecretArn=<get-arn-from-aws>",
+    "StackNameParameter=tm-dev",
+    "DatabaseName=tm"
+]
+
+[default.build.parameters]
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_image_repos = true
+resolve_s3 = true
+# confirm_changeset = true
+
+[default.package.parameters]
+resolve_s3 = false
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+[prod]
+[prod.global.parameters]
+stack_name = "tm-prod"
+parameter_overrides=[
+    "SecretArn=<get-arn-from-aws>",
+    "DatabaseName=tm",
+    "StackNameParameter=tm-prod"
+]
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_image_repos = true
+resolve_s3 = true
+
+[stage]
+[stage.global.parameters]
+stack_name = "sw2-poc-stage"
+parameter_overrides=[
+    "SecretArn=<get-arn-from-aws>",
+    "DatabaseName=tm",
+    "StackNameParameter=tm-poc-stage",
+    "ApplicationLogLevel=DEBUG",
+    "EventApiKey=<get-key>",
+    "VpcSecurityGroupId1=",
+    "VpcSecurityGroupId2=",
+    "VpcSubnetId2a=",
+    "VpcSubnetId2b="
+]
+
+[stage.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_image_repos = true
+resolve_s3 = true
+# confirm_changeset = true

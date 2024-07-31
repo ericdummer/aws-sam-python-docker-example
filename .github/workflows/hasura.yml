@@ -1,0 +1,24 @@
+name: hasura stage
+on:
+  push:
+    branches:
+      - disabled-for-now
+
+jobs:
+  build:
+    name: Deploy to Stage
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install hasura
+      run: curl -L "https://github.com/hasura/graphql-engine/raw/stable/cli/get.sh" | bash
+
+    - name: run the container & deploy to stage
+      working-directory: ./hasura
+      run: hasura deploy --skip-update-check --endpoint ${{ secrets.STAGE_HASURA_GRAPHQL_ENDPOINT }} --admin-secret ${{ secrets.STAGE_HASURA_GRAPHQL_ADMIN_SECRET }}
+
+      
+

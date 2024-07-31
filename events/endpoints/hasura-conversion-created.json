@@ -1,0 +1,114 @@
+{
+    "resource": "/event/conversion-created",
+    "path": "/event/conversion-created",
+    "httpMethod": "POST",
+    "headers": {
+        "Accept-Encoding": "gzip",
+        "CloudFront-Forwarded-Proto": "https",
+        "CloudFront-Is-Desktop-Viewer": "true",
+        "CloudFront-Is-Mobile-Viewer": "false",
+        "CloudFront-Is-SmartTV-Viewer": "false",
+        "CloudFront-Is-Tablet-Viewer": "false",
+        "CloudFront-Viewer-ASN": "16509",
+        "CloudFront-Viewer-Country": "US",
+        "Content-Type": "application/json",
+        "Host": "y69y1sftm5.execute-api.us-west-2.amazonaws.com",
+        "User-Agent": "hasura-graphql-engine/v2.37.0-cloud.2",
+        "Via": "1.1 a282f7d4f5ae65b33d809fbc6ea8641c.cloudfront.net (CloudFront)",
+        "X-Amz-Cf-Id": "_CClVqK0psEHNJVTECppGunyUyojgVgA7G0oCRyJWFIVE_V1hBkyvA==",
+        "X-Amzn-Trace-Id": "Root=1-65eb8628-25cc7dab5ad6813b64cf8b8e",
+        "X-Forwarded-For": "54.176.149.52, 15.158.0.54",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Proto": "https"
+    },
+    "multiValueHeaders": {
+        "Accept-Encoding": [
+            "gzip"
+        ],
+        "CloudFront-Forwarded-Proto": [
+            "https"
+        ],
+        "CloudFront-Is-Desktop-Viewer": [
+            "true"
+        ],
+        "CloudFront-Is-Mobile-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+        ],
+        "CloudFront-Is-Tablet-Viewer": [
+            "false"
+        ],
+        "CloudFront-Viewer-ASN": [
+            "16509"
+        ],
+        "CloudFront-Viewer-Country": [
+            "US"
+        ],
+        "Content-Type": [
+            "application/json"
+        ],
+        "Host": [
+            "y69y1sftm5.execute-api.us-west-2.amazonaws.com"
+        ],
+        "User-Agent": [
+            "hasura-graphql-engine/v2.37.0-cloud.2"
+        ],
+        "Via": [
+            "1.1 a282f7d4f5ae65b33d809fbc6ea8641c.cloudfront.net (CloudFront)"
+        ],
+        "X-Amz-Cf-Id": [
+            "_CClVqK0psEHNJVTECppGunyUyojgVgA7G0oCRyJWFIVE_V1hBkyvA=="
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-65eb8628-25cc7dab5ad6813b64cf8b8e"
+        ],
+        "X-Forwarded-For": [
+            "54.176.149.52, 15.158.0.54"
+        ],
+        "X-Forwarded-Port": [
+            "443"
+        ],
+        "X-Forwarded-Proto": [
+            "https"
+        ]
+    },
+    "queryStringParameters": null,
+    "multiValueQueryStringParameters": null,
+    "pathParameters": null,
+    "stageVariables": null,
+    "requestContext": {
+        "resourceId": "uuqjjo",
+        "resourcePath": "/event/conversion-created",
+        "httpMethod": "POST",
+        "extendedRequestId": "UVHmbFagPHcEXSA=",
+        "requestTime": "08/Mar/2024:21:42:00 +0000",
+        "path": "/Prod/event/conversion-created",
+        "accountId": "242761325242",
+        "protocol": "HTTP/1.1",
+        "stage": "Prod",
+        "domainPrefix": "y69y1sftm5",
+        "requestTimeEpoch": 1709934120870,
+        "requestId": "58f8e0c9-6d89-4965-befe-a177a1478b38",
+        "identity": {
+            "cognitoIdentityPoolId": null,
+            "accountId": null,
+            "cognitoIdentityId": null,
+            "caller": null,
+            "sourceIp": "54.176.149.52",
+            "principalOrgId": null,
+            "accessKey": null,
+            "cognitoAuthenticationType": null,
+            "cognitoAuthenticationProvider": null,
+            "userArn": null,
+            "userAgent": "hasura-graphql-engine/v2.37.0-cloud.2",
+            "user": null
+        },
+        "domainName": "y69y1sftm5.execute-api.us-west-2.amazonaws.com",
+        "deploymentId": "34drnv",
+        "apiId": "y69y1sftm5"
+    },
+    "body": "{\"created_at\":\"2024-03-08T22:28:44.282276\",\"delivery_info\":{\"current_retry\":0,\"max_retries\":0},\"event\":{\"data\":{\"new\":{\"affiliate_id\":\"0ad838fd-0991-4b29-96ba-783f81c106e8\",\"affiliate_vars\":null,\"created_at\":\"2024-02-23T22:28:55.854575+00:00\",\"customer_id\":\"cust08c6e63d-27f0-4a17-801f-00ee1aecf650\",\"id\":\"e882ba66-6283-47c7-a92d-7bb183893405\",\"product_id\":\"b8a6df61-5f0c-47f7-b612-0e788552ce35\",\"product_options\":null,\"status\":\"NEW\",\"status_reason\":null,\"updated_at\":\"2024-02-23T22:28:55.854575+00:00\"},\"old\":null},\"op\":\"MANUAL\",\"session_variables\":{\"x-hasura-role\":\"admin\"},\"trace_context\":{\"span_id\":\"c1e22e3c0d4e9104\",\"trace_id\":\"44ef982a2690e3a3880c537454cdff94\"}},\"id\":\"82494a5e-69c5-4ef6-bf9f-8c52152d0cca\",\"table\":{\"name\":\"conversion\",\"schema\":\"public\"},\"trigger\":{\"name\":\"conversion_created\"}}",
+    "isBase64Encoded": false
+}

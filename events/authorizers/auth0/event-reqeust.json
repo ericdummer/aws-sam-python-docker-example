@@ -1,0 +1,45 @@
+{
+    "version": "2.0",
+    "type": "REQUEST",
+    "routeArn": "<removed>",
+    "identitySource": [
+        "Bearer <removed>"
+    ],
+    "routeKey": "GET /document/{document_uuid}",
+    "rawPath": "/Prod/document/c7722105-de8b-40d9-ab0b-c31dfd5b7915",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
+        "authorization": "Bearer <removed>","cache-control": "no-cache",
+        "content-length": "0",
+        "host": "removed>>>>.execute-api.us-west-2.amazonaws.com",
+        "postman-token": "283f7c98-2c08-4c0f-ab62-22456f02504c",
+        "user-agent": "PostmanRuntime/7.37.3",
+        "x-amzn-trace-id": "Root=1-6621749f-76c608e7153d48e478184399",
+        "x-forwarded-for": "136.38.10.218",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "242761325242",
+        "apiId": "removed",
+        "domainName": "<removed>.execute-api.us-west-2.amazonaws.com",
+        "domainPrefix": "<removed>",
+        "http": {
+            "method": "GET",
+            "path": "/Prod/<removed>",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "136.38.10.218",
+            "userAgent": "PostmanRuntime/7.37.3"
+        },
+        "requestId": "Wb8o5gyuPHcEJqw=",
+        "routeKey": "GET /<removed>",
+        "stage": "Prod",
+        "time": "18/Apr/2024:19:29:35 +0000",
+        "timeEpoch": 1713468575065
+    },
+    "pathParameters": {
+        "document_uuid": "c7722105-de8b-40d9-ab0b-c31dfd5b7915"
+    }
+}

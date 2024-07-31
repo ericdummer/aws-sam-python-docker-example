@@ -1,0 +1,540 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  python3.12
+  Transcript Monitoring
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Parameters:
+  StackNameParameter:
+    Type: String
+  LogFormat:
+    Type: 'String'
+    Description: Log format to use.
+    Default: Text
+    AllowedValues:
+      - Text
+      - JSON
+    ConstraintDescription: must specify text or json.
+  SecretArn:
+    Type: 'String'
+    Description: ARN of the secret containing the GitHub token.
+    AllowedPattern: ^arn:aws:secretsmanager:.*$
+    ConstraintDescription: must be a valid secret ARN.
+  DatabaseName:
+    Type: 'String'
+    Description: Name of the database to use.
+    Default: "overwriteme"
+  ApplicationLogLevel:
+    Type: 'String'
+    Description: Log Level - DEBUG is very noisy
+    Default: "DEBUG"
+  S3UploadBucketOverride:
+    Type: 'String'
+    Description: Used for local developement
+    Default: ""
+  EventApiKey:
+    Type: 'String'
+    Description: When true, alway write a new version of the transcript
+  Auth0issuer:
+    Type: String
+    Description: The issuer URL from your Auth0 account.
+    Default: <add-default>
+  Auth0jwksurl:
+    Type: String
+    Description: The issuer URL from your Auth0 account.
+    Default: <add-default>
+  Auth0audience:
+    Type: String
+    Description: The issuer URL from your Auth0 account.
+    Default: <add-default>
+  VpcSecurityGroupId1:
+    Type: 'String'
+    Description: Security group id 2 for the lambda
+    Default: sg-madeupsecuritygroup1
+  VpcSecurityGroupId2:
+    Type: 'String'
+    Description: Security group id 1 for the lambda
+    Default: sg-madeupsecuritygroup2
+  VpcSubnetId2a:
+    Type: 'String'
+    Description: Subnet ids for the lambda
+    Default: subnet-madeupsubnetgroup1
+  VpcSubnetId2b:
+    Type: 'String'
+    Description: Subnet ids for the lambda
+    Default: subnet-madeupsubnetgroup2
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: !Ref LogFormat
+    Environment:
+      Variables:
+        SECRET_ARN: !Ref SecretArn
+        DATABASE_NAME: !Ref DatabaseName
+        APPLICATION_LOG_LEVEL: !Ref ApplicationLogLevel
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref VpcSecurityGroupId1
+        - !Ref VpcSecurityGroupId2
+      SubnetIds:
+        - !Ref VpcSubnetId2a
+        - !Ref VpcSubnetId2b
+    PropagateTags: True
+    Tags:
+      AppManagerCFNStackKey: !Ref StackNameParameter
+  HttpApi:
+    CorsConfiguration:
+      AllowMethods: ['GET', 'POST', 'HEAD','OPTIONS']
+      AllowHeaders: ['*']
+      AllowOrigins: ['*']
+      ExposeHeaders: ['*']
+  Api:
+    TracingEnabled: true
+
+Resources:
+# -----------------------------------------------------
+# Log Groups 
+# -----------------------------------------------------
+  EventBrigdeLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/events/${AWS::StackName}-EventBridgeGroup"
+      RetentionInDays: 14  # Optional
+# -----------------------------------------------------
+# IAM Roles
+# -----------------------------------------------------
+# -----------------------------------------------------
+# Permissions 
+# -----------------------------------------------------
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref Consumer2 
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt EventRuleNewSubscription.Arn 
+# -----------------------------------------------------
+# Queues 
+# -----------------------------------------------------
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 70 #needs to be longer than the consuming lambda
+  EventBridgeDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300 # 
+# -----------------------------------------------------
+# Buckets 
+# -----------------------------------------------------
+  UserS3UploadBucket:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - "*"
+# -----------------------------------------------------
+# Gateways 
+# -----------------------------------------------------
+  HttpApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: Prod 
+      Auth:
+        DefaultAuthorizer: Auth0LambdaAuthorizer  
+        Authorizers: 
+          Auth0LambdaAuthorizer:
+            EnableFunctionDefaultPermissions: True
+            AuthorizerPayloadFormatVersion: "2.0"
+            FunctionArn: !GetAtt Auth0AuthorizerFunction.Arn 
+            Identity:  
+              Headers:
+                - Authorization
+      # CORS configuration - this is open for development only and should be restricted in prod.
+      # See https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-httpapi-httpapicorsconfiguration.html
+      CorsConfiguration:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS,HEAD'"
+        AllowHeaders: "*"
+        AllowOrigins: "*"
+        ExposeHeaders: "*"
+
+  EventsApiGateway:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      StageName: Prod
+      ApiKeySourceType: HEADER
+      Auth:
+        ApiKeyRequired: true
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: !Sub "${AWS::StackName} REST API"
+          version: '1.0'
+        paths:
+          /hasura_event:
+            post:
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EndpointHasuraEventCreate.Arn}/invocations"
+            
+  ApiGatewayApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    Properties:
+      Enabled: true
+      Value: !Ref EventApiKey
+      StageKeys:
+        - RestApiId: !Ref EventsApiGateway
+          StageName: !Ref EventsApiGateway.Stage
+
+  ApiGatewayUsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    Properties:
+      ApiStages:
+        - ApiId: !Ref EventsApiGateway
+          Stage: !Ref EventsApiGateway.Stage
+      Description: 'Usage plan for API Key'
+      UsagePlanName: 'EventsUsagePlan'
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 50
+
+  ApiGatewayUsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    Properties:
+      KeyId: !Ref ApiGatewayApiKey
+      KeyType: 'API_KEY'
+      UsagePlanId: !Ref ApiGatewayUsagePlan
+
+# -----------------------------------------------------
+# Event Bus 
+# -----------------------------------------------------
+  BackendEventbus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub '${AWS::StackName}-BackendEventbus'
+# -----------------------------------------------------
+# Authorizers 
+# -----------------------------------------------------
+  Auth0AuthorizerFunction:
+    # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/authorizers/auth0
+      Handler: auth0_lambda.handler
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 5
+      Environment:
+        Variables:
+          TOKEN_ISSUER: !Ref Auth0issuer
+          JWKS_URI: !Ref Auth0jwksurl
+          AUDIENCE: !Ref Auth0audience
+# -----------------------------------------------------
+# Consumers 
+# -----------------------------------------------------
+  Consumer1:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      Timeout: 60
+      ReservedConcurrentExecutions: 70 # 70 is the upper limit or we start getting throttled by the IRS
+      Architectures:
+      - x86_64
+      Events:
+        TranscriptSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MyQueue.Arn 
+            BatchSize: 10 # Adjust as needed
+      Environment:
+        Variables:
+          S3_UPLOAD_BUCKET: !Ref UserS3UploadBucket
+      Policies:
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: !Ref SecretArn
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: <get-arn-from-aws> # TODO Parameterize
+      - S3CrudPolicy:
+          BucketName: !Ref UserS3UploadBucket
+    Metadata:
+      Dockerfile: Consumer1.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.11-v1
+  Consumer2:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Timeout: 60
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          S3_UPLOAD_BUCKET: !Ref UserS3UploadBucket
+      Policies:
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: !Ref SecretArn
+      - AWSSecretsManagerGetSecretValuePolicy:
+          SecretArn: <get-arn-from-aws> #todo parameterize
+    Metadata:
+      Dockerfile: Consumer2.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.12-v1
+# -----------------------------------------------------
+# Schedulers functions 
+# -----------------------------------------------------
+  Scheduler1:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      Timeout: 900
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !GetAtt MyQueue.QueueUrl
+      # Events:
+      #   ScheduledEvent:
+      #     Type: Schedule
+      #     Properties:
+      #       # Schedule: rate(1 hour)  # every hour
+      #       # Schedule: rate(1 minute)  # every minute
+      #       Schedule: rate(1 day)  # every day UTC 00:00 to 00:15 (approximately)
+      #       # Schedule: cron(0 0 * * ? *)  # every night at midnight
+      Policies:
+        # - AmazonRDSFullAccess
+        # - AmazonRDSDataFullAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref SecretArn
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt MyQueue.QueueName
+        - Statement:
+            - Sid: AllowProxyConnect
+              Effect: Allow
+              Action: rds-db:connect
+              Resource: "arn:aws:rds:us-west-2:242761325242:db-proxy:prx-023c6046f951ba02R"
+    Metadata:
+      Dockerfile: Scheduler1.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.12-v1
+  Scheduler2:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      PackageType: Image
+      Timeout: 900
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          EVENT_BUS: !Ref BackendEventbus
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - events:PutEvents
+            Resource: !GetAtt BackendEventbus.Arn
+      # Events:
+      #   ScheduledEvent:
+      #     Type: Schedule
+      #     Properties:
+      #       Schedule: rate(1 day)  # every day UTC 00:00 to 00:15 (approximately)
+    Metadata:
+      Dockerfile: Scheduler2.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.12-v1
+# -----------------------------------------------------
+# Endpoints 
+# -----------------------------------------------------
+  Endpoint2: 
+    Type: AWS::Serverless::Function 
+    Properties:
+      PackageType: Image
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          S3_UPLOAD_BUCKET: !Ref UserS3UploadBucket
+          S3_UPLOAD_BUCKET_OVERRIDE: !Ref S3UploadBucketOverride
+      Events:
+        GetEvent:
+          Type: HttpApi 
+          Properties:
+            Path: /endpoint2/{uuid} 
+            Method: GET 
+            ApiId: !Ref HttpApiGateway   
+        HeadEvent:
+          Type: HttpApi 
+          Properties:
+            Path: /endpoint2/{uuid} 
+            Method: HEAD
+            ApiId: !Ref HttpApiGateway   
+        OptionsEvent:
+          Type: HttpApi 
+          Properties:
+            Path: /endpoint2/{uuid} 
+            Method: OPTIONS
+            ApiId: !Ref HttpApiGateway   
+      Policies:
+        - AmazonS3ReadOnlyAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref SecretArn
+    Metadata:
+      Dockerfile: Endpoint2.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.12-v1
+
+  EndpointSingedUrlGet:
+    # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambdas/endpoints/signed_url_get
+      Handler: endpoint_singed_url_get.handler
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 5
+      Environment:
+        Variables:
+          S3_UPLOAD_BUCKET: !Ref UserS3UploadBucket
+          S3_UPLOAD_BUCKET_OVERRIDE: !Ref S3UploadBucketOverride
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UserS3UploadBucket
+      Events:
+        UploadAssetAPI:
+          Type: HttpApi
+          Properties:
+            Path: /uploads
+            Method: get
+            ApiId: !Ref HttpApiGateway
+        OptionsEvent:
+          Type: HttpApi
+          Properties:
+            Path: /uploads
+            Method: OPTIONS
+            ApiId: !Ref HttpApiGateway
+        HeadEvent:
+          Type: HttpApi
+          Properties:
+            Path: /uploads
+            Method: HEAD
+            ApiId: !Ref HttpApiGateway
+# -----------------------------------------------------
+# Endpoint Hasura Event Created (receiver)
+# -----------------------------------------------------
+  EndpointHasuraEventCreate: 
+    Type: AWS::Serverless::Function 
+    Properties:
+      PackageType: Image
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !Ref BackendEventbus
+      Events:
+        SubscriptionCreateOrUpdate:
+          Type: Api 
+          Properties:
+            Path: /hasura_event
+            Method: POST
+            RestApiId: !Ref EventsApiGateway
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref SecretArn
+        - Version: '2012-10-17'
+          Statement:
+            Effect: Allow
+            Action:
+              - events:PutEvents
+            Resource: !GetAtt BackendEventbus.Arn
+    Metadata:
+      Dockerfile: EndpointHasuraEventCreate.dockerfile
+      DockerContext: ./src/
+      DockerTag: python3.12-v1
+
+# -----------------------------------------------------
+# Event Bus Rules
+# -----------------------------------------------------
+  EventRuleNewSubscription:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "A new Subscription was created"
+      EventBusName: !Ref BackendEventbus
+      EventPattern:
+        source:
+          - "subscription_created_or_updated"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt Consumer2.Arn
+          Id: "Consumer2ID"
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+# -----------------------------------------------------
+# Application Insights 
+# -----------------------------------------------------
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Sub ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName: !Ref ApplicationResourceGroup
+      AutoConfigurationEnabled: true
+# -----------------------------------------------------
+# Outputs
+# -----------------------------------------------------
+Outputs:
+  HttpApiGateway:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Ref HttpApiGateway
+    Export:
+      Name: HttpApiGateway
+  APIEventsGateway:
+    Description: "The URL is:"
+    Value: !Sub "https://${EventsApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  UploadEndpointUrl:
+    Description: "HTTP API endpoint URL"
+    Value: !Sub "https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com"
+    Export:
+      Name: UploadEndpointUrl
+  UserS3UploadBucket:
+    Description: "S3 bucket for application uploads"
+    Value: !Ref "UserS3UploadBucket"
+    Export:
+      Name: UserS3UploadBucket
+  DocumentApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value: !Sub "https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/document/"
+    Export:
+      Name: DocumentApi
+  BackendEventbus:
+    Description: "Eventbus for backend"
+    Value: !Ref BackendEventbus
+    Export:
+      Name: BackendEventbus
+  BackendEventBusArn:
+    Description: "ARN of the EventBridge Event Bus"
+    Value: !GetAtt BackendEventbus.Arn
+  EventRuleNewSubscription:
+    Description: "EventRuleNewSubscription"
+    Value: !Ref EventRuleNewSubscription
+    Export:
+      Name: EventRuleNewSubscription
